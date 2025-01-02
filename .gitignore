@@ -1,0 +1,7 @@
+dnafx-editor
+*.o
+*.d
+
+presets
+*.phb
+*.bhb
