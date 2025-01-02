@@ -114,7 +114,7 @@ If you have custom presets, either because you downloaded one somewhere or you e
 
 	./dnafx-editor -IGE -u 200 -p ../presets/GARY\ MOORE.phb
 
-Of course, you can always restore one of the original presets by just re-uploading again to their original spot (assuming you backed them up first with `-s`).
+Of course, you can always restore one of the original presets by just re-uploading them again to their original spot (assuming you backed them up first with `-s`).
 
 This is, in summary, what the tool allows you to do for now. Hopefully further revisions will add more features.
 
