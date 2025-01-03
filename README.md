@@ -7,7 +7,7 @@ This is an open source editor (still experimental and WIP) for the [Harley Bento
 * [DNAfx GiT](https://harleybenton.com/product/dnafx-git/) (untested)
 * [DNAfx GiT Advanced](https://harleybenton.com/product/dnafx-git-advanced/) (untested)
 
-It is **NOT** affiliated with, nor endorsed by, Harley Benton, and is not aimed to compete with or deprecate the official editor. It's very simply an effort that I started because I needed it, and that I', sharing with the hope that others may find it useful (and hopefully contribute back to the project, should they find ways to extend/enhance it).
+It is **NOT** affiliated with, nor endorsed by, Harley Benton, and is not aimed to compete with or deprecate the official editor. It's very simply an effort that I started because I needed it, and that I'm sharing with the hope that others may find it useful (and hopefully contribute back to the project, should they find ways to extend/enhance it).
 
 It's also an _experimental_ tool. I'm not responsible for any damage this may do to your device or presets. You use it at your own risk: I'm testing this regularly on my device and it seems to be working as expected, but of course I don't know what may happen in different environments.
 
