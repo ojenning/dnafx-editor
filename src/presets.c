@@ -193,12 +193,12 @@ dnafx_preset *dnafx_preset_from_phb(const char *phb) {
 	json_error_t error;
 	json_t *json = json_loads(phb, 0, &error);
 	if(json == NULL) {
-		DNAFX_LOG(DNAFX_LOG_ERR, "JSON error: on line %d: %s", error.line, error.text);
+		DNAFX_LOG(DNAFX_LOG_ERR, "JSON error: on line %d: %s\n", error.line, error.text);
 		return NULL;
 	}
 	if(!json_is_object(json)) {
 		json_decref(json);
-		DNAFX_LOG(DNAFX_LOG_ERR, "JSON error: not an object");
+		DNAFX_LOG(DNAFX_LOG_ERR, "JSON error: not an object\n");
 		return NULL;
 	}
 	json_t *exp = json_object_get(json, "Exp");
@@ -207,7 +207,7 @@ dnafx_preset *dnafx_preset_from_phb(const char *phb) {
 	if(exp == NULL || !json_is_object(exp) || em == NULL || !json_is_object(em) ||
 			info == NULL || !json_is_object(info)) {
 		json_decref(json);
-		DNAFX_LOG(DNAFX_LOG_ERR, "Missing mandatory object (Exp, effectModule and/or fileInfo)");
+		DNAFX_LOG(DNAFX_LOG_ERR, "Missing mandatory object (Exp, effectModule and/or fileInfo)\n");
 		return NULL;
 	}
 	/* Create a preset instance */
@@ -230,7 +230,7 @@ dnafx_preset *dnafx_preset_from_phb(const char *phb) {
 		if(je == NULL || !json_is_object(je)) {
 			json_decref(json);
 			dnafx_preset_free(preset);
-			DNAFX_LOG(DNAFX_LOG_ERR, "Missing mandatory effect section (%s)", dnafx_sections[i].name);
+			DNAFX_LOG(DNAFX_LOG_ERR, "Missing mandatory effect section (%s)\n", dnafx_sections[i].name);
 			return NULL;
 		}
 		json_t *type = json_object_get(je, "TYPE");
@@ -240,7 +240,7 @@ dnafx_preset *dnafx_preset_from_phb(const char *phb) {
 				data == NULL || !json_is_object(data)) {
 			json_decref(json);
 			dnafx_preset_free(preset);
-			DNAFX_LOG(DNAFX_LOG_ERR, "Missing mandatory effect property in '%s' (Data, SWITCH and/or TYPE)",
+			DNAFX_LOG(DNAFX_LOG_ERR, "Missing mandatory effect property in '%s' (Data, SWITCH and/or TYPE)\n",
 				dnafx_sections[i].name);
 			return NULL;
 		}
@@ -260,7 +260,8 @@ dnafx_preset *dnafx_preset_from_phb(const char *phb) {
 			if(fval == NULL || !json_is_integer(fval)) {
 				json_decref(json);
 				dnafx_preset_free(preset);
-				DNAFX_LOG(DNAFX_LOG_ERR, "Missing mandatory effect property (%s)", f->param_names[j]);
+				DNAFX_LOG(DNAFX_LOG_ERR, "Missing mandatory effect property in %s (%s)\n",
+					dnafx_sections[i].name, f->param_names[j]);
 				return NULL;
 			}
 			preset->effects[i].values[j] = json_integer_value(fval);
@@ -274,7 +275,7 @@ dnafx_preset *dnafx_preset_from_phb(const char *phb) {
 		if(expval == NULL || !json_is_integer(expval)) {
 			json_decref(json);
 			dnafx_preset_free(preset);
-			DNAFX_LOG(DNAFX_LOG_ERR, "Missing mandatory expression property (%s)", dnafx_expression[i]);
+			DNAFX_LOG(DNAFX_LOG_ERR, "Missing mandatory expression property (%s)\n", dnafx_expression[i]);
 			return NULL;
 		}
 		preset->expressions[i] = json_integer_value(expval);
@@ -527,10 +528,10 @@ void dnafx_presets_print(void) {
 	if(no_id == NULL) {
 		DNAFX_LOG(DNAFX_LOG_INFO, " (none)");
 	} else {
-		DNAFX_LOG(DNAFX_LOG_INFO, "   ");
 		i = 0;
 		GList *temp = no_id;
 		while(temp != NULL) {
+			DNAFX_LOG(DNAFX_LOG_INFO, "   ");
 			i++;
 			preset = (dnafx_preset *)temp->data;
 			DNAFX_LOG(DNAFX_LOG_INFO, "[XXX] %-14s   ", preset ? preset->name : NULL);

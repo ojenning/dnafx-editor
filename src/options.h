@@ -10,8 +10,8 @@ typedef struct dnafx_options {
 	gboolean no_init, no_get_presets, no_get_extras;
 	const char *save_presets_folder;
 	int change_preset, upload_preset;
-	const char *preset_file_in, *preset_file_out;
-	const char *phb_file_in, *phb_file_out;
+	const char **preset_file_in, *preset_file_out;
+	const char **phb_file_in, *phb_file_out;
 	int debug_level;
 	gboolean debug_timestamps;
 	gboolean disable_colors;

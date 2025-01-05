@@ -86,14 +86,33 @@ int main(int argc, char *argv[]) {
 		res = 1;
 		goto done;
 	}
+	if((options.preset_file_out != NULL || options.phb_file_out != NULL) &&
+			((options.preset_file_in != NULL && options.preset_file_in[1] != NULL) ||
+			(options.phb_file_in != NULL && options.phb_file_in[1] != NULL))) {
+		DNAFX_LOG(DNAFX_LOG_FATAL, "Can't convert preset to a different format, multiple input presets provided\n");
+		res = 1;
+		goto done;
+	}
 	/* Parse the preset file, if any, to our internal format */
 	dnafx_preset *preset = NULL;
 	if(options.preset_file_in != NULL) {
 		/* Open the provided binary file and parse it */
-		preset = dnafx_preset_import(options.preset_file_in, FALSE);
+		int i = 0;
+		while(options.preset_file_in[i] != NULL) {
+			preset = dnafx_preset_import(options.preset_file_in[i], FALSE);
+			if(options.preset_file_out == NULL && options.phb_file_out == NULL && preset != NULL)
+				dnafx_preset_print_debug(preset);
+			i++;
+		}
 	} else if(options.phb_file_in != NULL) {
 		/* Open the provided PHB file and parse it */
-		preset = dnafx_preset_import(options.phb_file_in, TRUE);
+		int i = 0;
+		while(options.phb_file_in[i] != NULL) {
+			preset = dnafx_preset_import(options.phb_file_in[i], TRUE);
+			if(options.preset_file_out == NULL && options.phb_file_out == NULL && preset != NULL)
+				dnafx_preset_print_debug(preset);
+			i++;
+		}
 	}
 	/* Check if we need to convert this preset to something else */
 	if(options.preset_file_out != NULL) {
@@ -110,8 +129,6 @@ int main(int argc, char *argv[]) {
 			goto done;
 		}
 	}
-	if(options.preset_file_out == NULL && options.phb_file_out == NULL && preset != NULL)
-		dnafx_preset_print_debug(preset);
 
 	/* Check what tasks should be queued at startup */
 	if(!options.offline) {

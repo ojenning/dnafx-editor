@@ -782,6 +782,9 @@ static void dnafx_usb_cb(struct libusb_transfer *transfer) {
 			if(transfer->actual_length > 0) {
 				dnafx_print_hex(DNAFX_LOG_HUGE, NULL, transfer->buffer, transfer->actual_length);
 			}
+			/* Update the local view of presets */
+			dnafx_preset_set_id(cur_preset, cur_preset->id);
+			cur_preset = 0;
 		}
 		/* This transaction is over, we're ready for another task */
 		g_atomic_int_set(&in_flight, 0);
