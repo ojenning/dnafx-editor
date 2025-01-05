@@ -8,6 +8,7 @@
 #include <jansson.h>
 
 /* Defines */
+#define DNAFX_PRESETS_NUM		200
 #define DNAFX_PRESET_SIZE		184
 #define DNAFX_PRESET_NAME_SIZE	14
 #define DNAFX_PRESET_EFFECTS	9
@@ -62,12 +63,11 @@ dnafx_preset *dnafx_preset_import(const char *filename, gboolean phb);
 int dnafx_preset_export(dnafx_preset *preset, const char *filename, gboolean phb);
 
 /* Presets management */
-int dnafx_preset_add_byid(dnafx_preset *preset, int id);
+int dnafx_preset_add(dnafx_preset *preset);
 dnafx_preset *dnafx_preset_find_byid(int id);
-int dnafx_preset_remove_byid(int id, gboolean unref);
-int dnafx_preset_add_byname(dnafx_preset *preset);
 dnafx_preset *dnafx_preset_find_byname(const char *name);
-int dnafx_preset_remove_byname(const char *name, gboolean unref);
+int dnafx_preset_set_id(dnafx_preset *preset, int id);
+int dnafx_preset_remove(dnafx_preset *preset);
 
 /* Listing presets */
 void dnafx_presets_print(void);

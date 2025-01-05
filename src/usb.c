@@ -639,18 +639,20 @@ static void dnafx_usb_cb(struct libusb_transfer *transfer) {
 			size_t offset = 0;
 			size_t count = 0;
 			dnafx_preset *p = NULL;
-			while(offset + DNAFX_PRESET_SIZE < buf_size && count < 200) {
+			while(offset + DNAFX_PRESET_SIZE < buf_size && count < DNAFX_PRESETS_NUM) {
 				preset = &buf[offset];
 				p = dnafx_preset_from_bytes(preset, DNAFX_PRESET_SIZE);
 				if(p != NULL) {
 					/* Keep track of the preset */
-					dnafx_preset_add_byid(p, p->id);
-					/* Check if we need to also save it locally */
-					if(dnafx_presets_folder() != NULL) {
-						/* FIXME */
-						char filename[256];
-						g_snprintf(filename, sizeof(filename), "%s/%03d-%s.bhb", dnafx_presets_folder(), p->id, p->name);
-						dnafx_write_file(filename, FALSE, preset, DNAFX_PRESET_SIZE);
+					if(dnafx_preset_add(p) == 0) {
+						dnafx_preset_set_id(p, p->id);
+						/* Check if we need to also save it locally */
+						if(dnafx_presets_folder() != NULL) {
+							/* FIXME */
+							char filename[256];
+							g_snprintf(filename, sizeof(filename), "%s/%03d-%s.bhb", dnafx_presets_folder(), p->id, p->name);
+							dnafx_write_file(filename, FALSE, preset, DNAFX_PRESET_SIZE);
+						}
 					}
 				}
 				offset += DNAFX_PRESET_SIZE;

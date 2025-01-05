@@ -128,7 +128,7 @@ int main(int argc, char *argv[]) {
 			dnafx_tasks_add(dnafx_task_new(1, command));
 		}
 		if(options.change_preset > 0) {
-			if(options.change_preset > 200) {
+			if(options.change_preset > DNAFX_PRESETS_NUM) {
 				DNAFX_LOG(DNAFX_LOG_WARN, "Invalid preset number %d\n", options.change_preset);
 			} else {
 				char preset_number[4];
@@ -140,7 +140,7 @@ int main(int argc, char *argv[]) {
 		if(options.upload_preset > 0) {
 			if(preset == NULL) {
 				DNAFX_LOG(DNAFX_LOG_WARN, "Can't upload a preset, none was imported\n");
-			} else if(options.upload_preset > 200) {
+			} else if(options.upload_preset > DNAFX_PRESETS_NUM) {
 				DNAFX_LOG(DNAFX_LOG_WARN, "Invalid preset number %d\n", options.upload_preset);
 			} else {
 				char preset_number[4];

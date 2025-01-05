@@ -6,14 +6,13 @@
 #include "debug.h"
 
 /* Tables */
-static GHashTable *presets_byid = NULL;
+static dnafx_preset *presets[DNAFX_PRESETS_NUM];
 static GHashTable *presets_byname = NULL;
 
 /* Presets state */
 static char *presets_folder = NULL;
 int dnafx_presets_init(const char *folder) {
-	presets_byid = g_hash_table_new_full(NULL, NULL,
-		NULL, (GDestroyNotify)dnafx_preset_free);
+	memset(presets, 0, sizeof(presets));
 	presets_byname = g_hash_table_new_full(g_str_hash, g_str_equal,
 		(GDestroyNotify)g_free, (GDestroyNotify)dnafx_preset_free);
 	if(folder == NULL) {
@@ -56,9 +55,6 @@ char *dnafx_presets_folder(void) {
 void dnafx_presets_deinit(void) {
 	g_free(presets_folder);
 	presets_folder = NULL;
-	if(presets_byid != NULL)
-		g_hash_table_unref(presets_byid);
-	presets_byid = NULL;
 	if(presets_byname != NULL)
 		g_hash_table_unref(presets_byname);
 	presets_byname = NULL;
@@ -396,7 +392,7 @@ dnafx_preset *dnafx_preset_import(const char *filename, gboolean phb) {
 		preset = dnafx_preset_from_phb(buf);
 	}
 	if(preset != NULL)
-		dnafx_preset_add_byname(preset);
+		dnafx_preset_add(preset);
 	return preset;
 }
 
@@ -425,53 +421,50 @@ int dnafx_preset_export(dnafx_preset *preset, const char *filename, gboolean phb
 }
 
 /* Presets management */
-int dnafx_preset_add_byid(dnafx_preset *preset, int id) {
-	if(presets_byid == NULL || preset == NULL || id < 1 || id > 200) {
+int dnafx_preset_add(dnafx_preset *preset) {
+	if(presets_byname == NULL || preset == NULL || strlen(preset->name) == 0) {
 		DNAFX_LOG(DNAFX_LOG_ERR, "Invalid arguments\n");
 		return -1;
 	}
-	preset->id = id;
-	if(!g_hash_table_insert(presets_byid, GINT_TO_POINTER(id), preset)) {
-		DNAFX_LOG(DNAFX_LOG_ERR, "Error adding preset %d to the list\n", id);
+	char *name = g_strdup(preset->name);
+	if(dnafx_preset_find_byname(name) != NULL) {
+		/* We already have a preset with this name, change it */
+		if(strlen(preset->name) > 12) {
+			/* Too many attempts or name too long to edit */
+			DNAFX_LOG(DNAFX_LOG_ERR, "Error adding preset '%s' to the list\n", name);
+			g_free(name);
+			return -1;
+		}
+		size_t o_len = strlen(name), n_size = o_len + 3, ret = 0;
+		name = g_realloc(name, n_size);
+		char digits[3];
+		int attempts = 1;
+		while(dnafx_preset_find_byname(name) != NULL) {
+			name[o_len] = '\0';
+			attempts++;
+			g_snprintf(digits, sizeof(digits), "%d", attempts);
+			ret = g_strlcat(name, digits, n_size);
+			if(ret >= n_size)
+				DNAFX_LOG(DNAFX_LOG_ERR, "Truncation occurred, %lu >= %lu\n", ret, n_size);
+		}
+		DNAFX_LOG(DNAFX_LOG_WARN, "We already have a preset named '%s', renaming new preset to '%s'\n",
+			preset->name, name);
+		memcpy(preset->name, name, strlen(name));
+	}
+	if(!g_hash_table_insert(presets_byname, name, preset)) {
+		DNAFX_LOG(DNAFX_LOG_ERR, "Error adding preset '%s' to the list\n", name);
+		g_free(name);
 		return -1;
 	}
 	return 0;
 }
 
 dnafx_preset *dnafx_preset_find_byid(int id) {
-	if(presets_byid == NULL || id < 1 || id > 200) {
+	if(id < 1 || id > DNAFX_PRESETS_NUM) {
 		DNAFX_LOG(DNAFX_LOG_ERR, "Invalid arguments\n");
 		return NULL;
 	}
-	return g_hash_table_lookup(presets_byid, GINT_TO_POINTER(id));
-}
-
-int dnafx_preset_remove_byid(int id, gboolean unref) {
-	if(presets_byid == NULL || id < 1 || id > 200) {
-		DNAFX_LOG(DNAFX_LOG_ERR, "Invalid arguments\n");
-		return -1;
-	}
-	gboolean done = FALSE;
-	if(unref) {
-		done = g_hash_table_remove(presets_byid, GINT_TO_POINTER(id));
-	} else {
-		done = g_hash_table_steal(presets_byid, GINT_TO_POINTER(id));
-	}
-	return done ? 0 : -1;
-}
-
-int dnafx_preset_add_byname(dnafx_preset *preset) {
-	if(presets_byname == NULL || preset == NULL || strlen(preset->name) == 0) {
-		DNAFX_LOG(DNAFX_LOG_ERR, "Invalid arguments\n");
-		return -1;
-	}
-	char *name = g_strdup(preset->name);
-	if(!g_hash_table_insert(presets_byname, name, preset)) {
-		DNAFX_LOG(DNAFX_LOG_ERR, "Error adding preset named '%s' to the list\n", name);
-		g_free(name);
-		return -1;
-	}
-	return 0;
+	return presets[id-1];
 }
 
 dnafx_preset *dnafx_preset_find_byname(const char *name) {
@@ -482,17 +475,28 @@ dnafx_preset *dnafx_preset_find_byname(const char *name) {
 	return g_hash_table_lookup(presets_byname, name);
 }
 
-int dnafx_preset_remove_byname(const char *name, gboolean unref) {
-	if(presets_byname == NULL || name == NULL || strlen(name) == 0) {
+int dnafx_preset_set_id(dnafx_preset *preset, int id) {
+	if(preset == NULL || id > DNAFX_PRESETS_NUM) {
 		DNAFX_LOG(DNAFX_LOG_ERR, "Invalid arguments\n");
 		return -1;
 	}
-	gboolean done = FALSE;
-	if(unref) {
-		done = g_hash_table_remove(presets_byname, name);
-	} else {
-		done = g_hash_table_steal(presets_byname, name);
+	if(id > 1 && presets[id-1] != NULL) {
+		/* There was another preset in that slot, remove it from there */
+		DNAFX_LOG(DNAFX_LOG_INFO, "Removing preset '%s' from local slot %d\n",
+			presets[id-1]->name, id);
+		presets[id-1]->id = 0;
 	}
+	preset->id = id;
+	presets[id-1] = preset;
+	return 0;
+}
+
+int dnafx_preset_remove(dnafx_preset *preset) {
+	if(presets_byname == NULL || preset == NULL || strlen(preset->name) == 0) {
+		DNAFX_LOG(DNAFX_LOG_ERR, "Invalid arguments\n");
+		return -1;
+	}
+	gboolean done = g_hash_table_remove(presets_byname, preset->name);
 	return done ? 0 : -1;
 }
 
@@ -500,37 +504,41 @@ int dnafx_preset_remove_byname(const char *name, gboolean unref) {
 void dnafx_presets_print(void) {
 	dnafx_preset *preset = NULL;
 	DNAFX_LOG(DNAFX_LOG_INFO, "Device presets:\n");
-	if(presets_byid == NULL || g_hash_table_size(presets_byid) == 0) {
-		DNAFX_LOG(DNAFX_LOG_INFO, " (none)");
-	} else {
-		DNAFX_LOG(DNAFX_LOG_INFO, " ");
-		int i = 0;
-		for(i=1; i<=200; i++) {
-			preset = g_hash_table_lookup(presets_byid, GINT_TO_POINTER(i));
-			DNAFX_LOG(DNAFX_LOG_INFO, "[%03d] %-14s   ",
-				preset ? preset->id : 0, preset ? preset->name : NULL);
-			if((i % 3) == 0)
-				DNAFX_LOG(DNAFX_LOG_INFO, "\n ");
-		}
+	uint8_t i = 0;
+	for(i=1; i<= DNAFX_PRESETS_NUM; i++) {
+		DNAFX_LOG(DNAFX_LOG_INFO, "   ");
+		preset = presets[i-1];
+		DNAFX_LOG(DNAFX_LOG_INFO, "[%03d] %-14s   ",
+			preset ? preset->id : 0, preset ? preset->name : NULL);
+		if((i % 3) == 0)
+			DNAFX_LOG(DNAFX_LOG_INFO, "\n");
 	}
 	DNAFX_LOG(DNAFX_LOG_INFO, "\n\n");
 	DNAFX_LOG(DNAFX_LOG_INFO, "Named presets:\n");
 	GList *names = presets_byname ? g_hash_table_get_keys(presets_byname) : NULL;
-	if(names == NULL) {
+	GList *no_id = NULL, *temp = names;
+	while(temp != NULL) {
+		preset = g_hash_table_lookup(presets_byname, (char *)temp->data);
+		if(preset->id == 0)
+			no_id = g_list_prepend(no_id, preset);
+		temp = temp->next;
+	}
+	g_list_free(names);
+	if(no_id == NULL) {
 		DNAFX_LOG(DNAFX_LOG_INFO, " (none)");
 	} else {
-		DNAFX_LOG(DNAFX_LOG_INFO, " ");
-		int i = 0;
-		GList *temp = names;
+		DNAFX_LOG(DNAFX_LOG_INFO, "   ");
+		i = 0;
+		GList *temp = no_id;
 		while(temp != NULL) {
 			i++;
-			preset = g_hash_table_lookup(presets_byname, (char *)temp->data);
+			preset = (dnafx_preset *)temp->data;
 			DNAFX_LOG(DNAFX_LOG_INFO, "[XXX] %-14s   ", preset ? preset->name : NULL);
 			if((i % 3) == 0)
-				DNAFX_LOG(DNAFX_LOG_INFO, "\n ");
+				DNAFX_LOG(DNAFX_LOG_INFO, "\n");
 			temp = temp->next;
 		}
 	}
 	DNAFX_LOG(DNAFX_LOG_INFO, "\n\n");
-	g_list_free(names);
+	g_list_free(no_id);
 }

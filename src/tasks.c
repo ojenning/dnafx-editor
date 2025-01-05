@@ -82,7 +82,7 @@ dnafx_task *dnafx_task_new(int argc, char **argv) {
 			return NULL;
 		}
 		int preset_number = atoi(argv[1]);
-		if(preset_number < 1 || preset_number > 200) {
+		if(preset_number < 1 || preset_number > DNAFX_PRESETS_NUM) {
 			DNAFX_LOG(DNAFX_LOG_WARN, "Invalid 'change-preset' format\n");
 			dnafx_task_free(task);
 			task = NULL;
@@ -97,7 +97,7 @@ dnafx_task *dnafx_task_new(int argc, char **argv) {
 			return NULL;
 		}
 		int preset_number = atoi(argv[1]);
-		if(preset_number < 1 || preset_number > 200) {
+		if(preset_number < 1 || preset_number > DNAFX_PRESETS_NUM) {
 			DNAFX_LOG(DNAFX_LOG_WARN, "Invalid 'rename-preset' format\n");
 			dnafx_task_free(task);
 			task = NULL;
@@ -117,7 +117,7 @@ dnafx_task *dnafx_task_new(int argc, char **argv) {
 			return NULL;
 		}
 		int preset_number = atoi(argv[1]);
-		if(preset_number < 1 || preset_number > 200) {
+		if(preset_number < 1 || preset_number > DNAFX_PRESETS_NUM) {
 			DNAFX_LOG(DNAFX_LOG_WARN, "Invalid 'upload-preset' format\n");
 			dnafx_task_free(task);
 			task = NULL;
