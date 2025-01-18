@@ -1,6 +1,6 @@
 CC = gcc
-STUFF = $(shell pkg-config --cflags glib-2.0 libusb-1.0 jansson) -D_GNU_SOURCE
-STUFF_LIBS = $(shell pkg-config --libs glib-2.0 libusb-1.0 jansson)
+STUFF = $(shell pkg-config --cflags glib-2.0 libusb-1.0 jansson libwebsockets) -D_GNU_SOURCE
+STUFF_LIBS = $(shell pkg-config --libs glib-2.0 libusb-1.0 jansson libwebsockets)
 OPTS = -Wall -Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations -Wunused #-Werror #-O2
 GDB = -g -ggdb
 #~ ASAN = -O1 -g3 -ggdb3 -fno-omit-frame-pointer -fsanitize=address -fno-sanitize-recover=all -fsanitize-address-use-after-scope
@@ -8,7 +8,8 @@ GDB = -g -ggdb
 
 DNAFX_EDITOR = dnafx-editor
 DNAFX_EDITOR_OBJS = src/dnafx-editor.o src/options.o \
-	src/usb.o src/tasks.o src/presets.o src/utils.o src/embedded_cli.o
+	src/usb.o src/tasks.o src/presets.o src/utils.o \
+	src/httpws.o src/embedded_cli.o
 
 all: $(DNAFX_EDITOR)
 

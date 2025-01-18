@@ -7,6 +7,7 @@ gboolean dnafx_options_parse(dnafx_options *options, int argc, char *argv[]) {
 	/* Supported command-line arguments */
 	GOptionEntry opt_entries[] = {
 		{ "interactive", 'i', 0, G_OPTION_ARG_NONE, &options->interactive, "Provide a CLI to interact with the device (default=no, quit when done)", NULL },
+		{ "http-ws", 'H', 0, G_OPTION_ARG_INT, &options->http_port, "Espose an HTTP/WebSocket API on the provided port (default=0, disabled)", NULL },
 		{ "offline", 'o', 0, G_OPTION_ARG_NONE, &options->offline, "Don't connect to the device via USB (default=always connect)", NULL },
 		{ "no-init", 'I', 0, G_OPTION_ARG_NONE, &options->no_init, "Don't send the initialization messages at startup (default=no)", NULL },
 		{ "no-get-presets", 'G', 0, G_OPTION_ARG_NONE, &options->no_get_presets, "Don't retrieve all presets at startup (default=no)", NULL },

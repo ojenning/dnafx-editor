@@ -5,6 +5,7 @@
 #include <stdint.h>
 
 #include <glib.h>
+#include <jansson.h>
 
 /* Task type */
 typedef enum dnafx_task_type {
@@ -22,6 +23,7 @@ typedef enum dnafx_task_type {
 	DNAFX_TASK_GET_EXTRAS_RESPONSE,
 	DNAFX_TASK_CHANGE_PRESET,
 	DNAFX_TASK_RENAME_PRESET,
+	DNAFX_TASK_RENAME_PRESET_RESPONSE,
 	DNAFX_TASK_UPLOAD_PRESET_1,
 	DNAFX_TASK_UPLOAD_PRESET_2,
 	DNAFX_TASK_UPLOAD_PRESET_3,
@@ -44,14 +46,22 @@ typedef struct dnafx_task {
 	int number[4];
 	/* Strings, if needed */
 	char *text[4];
+	/* Opaque context, for tasks triggered by an API */
+	void *context;
+	/* Callback function, for tasks triggered by an API */
+	void (* callback)(int code, void *result, void *user_data);
 } dnafx_task;
 /* Create a new task out of a command */
 dnafx_task *dnafx_task_new(int argc, char **argv);
+/* Add context and a callback to a task in case it's triggered by an API */
+void dnafx_task_add_context(dnafx_task *task, void *context,
+	void (* callback)(int code, void *result, void *user_data));
 /* Free a task */
 void dnafx_task_free(dnafx_task *task);
 
 /* Tasks management */
 void dnafx_task_show_help(void);
+json_t *dnafx_task_show_help_json(void);
 void dnafx_tasks_init(void);
 void dnafx_tasks_add(dnafx_task *task);
 gboolean dnafx_tasks_is_empty(void);

@@ -41,7 +41,7 @@ The plan, sooner or later, is to come up with a more or less complete editor for
 - [ ] Interacting with the rhythm/tap functionality, if possible
 - [ ] Intercepting asynchronous events from the device (e.g., hardware preset edits, triggers, etc.)
 - [x] Interactive console for doing things
-- [ ] Support for network protocols for doing things (e.g., netcat/telnet, WebSockets, HTTP, etc.)
+- [x] Support for network protocols for doing things (HTTP, WebSocket)
 - [ ] Support for Bluetooth commands for doing things
 - [ ] Interactive GUI to mimic the official editor functionality (GTK? SDL2?)
 - [ ] Offline mode for editing presets even without access to the device
@@ -54,6 +54,7 @@ To compile this editor, you'll need to satisfy the following dependencies:
 * [GLib](https://docs.gtk.org/glib/)
 * [libusb](https://libusb.info/)
 * [Jansson](https://github.com/akheron/jansson)
+* [libwebsockets](https://libwebsockets.org/)
 
 Notice that, at the time of writing, only Linux is supported as a target. While all dependencies should be cross platform, meaning support could be extended to other systems as well, I don't see an immediate need for that (especially considering an official editor already exists for Windows and macOS).
 
@@ -120,7 +121,22 @@ All those features can also be performed interactively, if you launch the tool i
 
 Type `help` for a more comprehensive list of the currently supported CLI commands.
 
-This is, in summary, what the tool allows you to do for now. Hopefully further revisions will add more features.
+You can control the device via HTTP and/or WebSocket as well, if you enable the integrated backend, by passing the port to bind to via the `-H` property. This command, for instance, enables both the CLI and the HTTP/WebSocket backend, by listening on port `8000`:
+
+	./dnafx-editor -H 8000 -i
+
+This means you can use HTTP `POST` requests or a WebSocket connection (using the `dnafx-protocol` protocol when negotiating) to send messages to the editor. This curl one-liner, for instance, can be used to ask the editor to change the current preset on the device:
+
+	curl -v -d '{"request": "change-preset", "arguments": [ "59" ]}' http://127.0.0.1:8000/
+
+Whether you're using HTTP or WebSocket, requests must be formatted as JSON objects:
+
+	{
+		"request": "<name of request>",
+		"arguments": [ // array of strings, arguments to the request ]
+	}
+
+Sending `help` as a request will return info on the supported requests.
 
 # Want to help?
 

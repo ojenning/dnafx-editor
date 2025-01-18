@@ -6,6 +6,7 @@
 /* Struct containing the parsed command line options */
 typedef struct dnafx_options {
 	gboolean interactive;
+	int http_port;
 	gboolean offline;
 	gboolean no_init, no_get_presets, no_get_extras;
 	const char *save_presets_folder;

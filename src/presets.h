@@ -56,7 +56,9 @@ dnafx_preset *dnafx_preset_from_phb(const char *phb);
 
 /* Encoding */
 int dnafx_preset_to_bytes(dnafx_preset *preset, uint8_t *buf, size_t blen);
+char *dnafx_preset_to_bytes_base64(dnafx_preset *preset);
 char *dnafx_preset_to_phb(dnafx_preset *preset);
+json_t *dnafx_preset_to_phb_json(dnafx_preset *preset);
 
 /* Importing and exporting */
 dnafx_preset *dnafx_preset_import(const char *filename, gboolean phb);
@@ -71,5 +73,6 @@ int dnafx_preset_remove(dnafx_preset *preset);
 
 /* Listing presets */
 void dnafx_presets_print(void);
+json_t *dnafx_presets_list(void);
 
 #endif
