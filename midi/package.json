@@ -1,0 +1,23 @@
+{
+	"name": "dnafx-midi-controlled",
+	"description": "Demo of a MIDI controller for dnafx-editor",
+	"version": "0.0.1",
+	"license": "MIT",
+	"keywords": [
+		"guitar",
+		"midi",
+		"dnafx"
+	],
+	"author": {
+		"name": "Lorenzo Miniero",
+		"email": "lminiero@gmail.com"
+	},
+	"main": "src/controller.js",
+	"dependencies": {
+		"easymidi": "^3.1.0"
+	},
+	"scripts": {
+		"build": "npm install",
+		"start": "node src/controller.js"
+	}
+}
