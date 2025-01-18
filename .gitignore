@@ -5,3 +5,5 @@ dnafx-editor
 presets
 *.phb
 *.bhb
+
+node_modules

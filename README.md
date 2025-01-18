@@ -138,6 +138,8 @@ Whether you're using HTTP or WebSocket, requests must be formatted as JSON objec
 
 Sending `help` as a request will return info on the supported requests.
 
+For an example of how you can leverage the HTTP/WebSocket support to expose other control methodologies, you can check the [MIDI controller](midi/README.md) demo in the `midi` subfolder.
+
 # Want to help?
 
 The easiest way to help is to, first of all, just use the tool, and make sure it does what it should. This would be particularly helpful with versions of the device different from my own, since I only have the Core but have never tried it with the regular or Advanced versions (which should in theory work the same way, as the official editor is the same, but I can't vouch for that).
