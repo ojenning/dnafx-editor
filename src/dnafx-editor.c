@@ -17,6 +17,7 @@
 #include "utils.h"
 #include "options.h"
 #include "embedded_cli.h"
+#include "httpws.h"
 #include "debug.h"
 
 /* Command line options */
@@ -26,6 +27,7 @@ static dnafx_options options = { 0 };
 int dnafx_log_level = DNAFX_LOG_INFO;
 gboolean dnafx_log_timestamps = FALSE;
 gboolean dnafx_log_colors = TRUE;
+gboolean dnafx_lock_debug = FALSE;
 
 /* Signal */
 static volatile int stop = 0;
@@ -170,10 +172,17 @@ int main(int argc, char *argv[]) {
 	if(options.interactive) {
 		char *command[] = { "cli" };
 		dnafx_tasks_add(dnafx_task_new(1, command));
-	} else {
+	} else if(options.http_port < 1) {
 		char *command[] = { "quit" };
 		dnafx_tasks_add(dnafx_task_new(1, command));
 	}
+
+	/* If we need an HTTP/WebSocket server, set it up now */
+	if(options.http_port < 0) {
+		DNAFX_LOG(DNAFX_LOG_WARN, "Invalid port '%d', disabling HTTP/WebSocket server\n", options.http_port);
+		options.http_port = 0;
+	}
+	dnafx_httpws_init(options.http_port);
 
 	/* Handle SIGINT (CTRL-C), SIGTERM (from service managers) */
 	signal(SIGINT, dnafx_handle_signal);
@@ -188,9 +197,9 @@ int main(int argc, char *argv[]) {
 	/* Loop */
 	int fds_num = 0, i = 0, ret = 0, timeout = 0;
 	struct pollfd fds[20];
-	const struct libusb_pollfd **usb_fds = dnafx_usb_fds();
+	const struct libusb_pollfd **usb_fds = dnafx_usb_fds(FALSE);
 	struct timeval tv = { 0 };
-	while(!g_atomic_int_get(&stop)) {
+	while(dnafx_is_running()) {
 		/* Check what the next timeout for libusb is */
 		ret = dnafx_usb_get_next_timeout(&tv);
 		if(ret == -1) {
@@ -201,10 +210,10 @@ int main(int argc, char *argv[]) {
 			dnafx_usb_step();
 			continue;
 		}
+		/* Prepare the file descriptors to monitor and the timeout */
 		timeout = DNAFX_POLL_TIMEOUT;
 		if(tv.tv_sec == 0 && tv.tv_sec > 0 && (tv.tv_usec/1000) < timeout)
 			timeout = tv.tv_usec/1000;
-		/* Prepare the file descriptors to monitor */
 		fds_num = 0;
 		/* Track the standard input, for the embedded CLI */
 		fds[fds_num].fd = 0;
@@ -223,7 +232,7 @@ int main(int argc, char *argv[]) {
 		/* Poll the file descriptors */
 		ret = poll(fds, fds_num, timeout);
 		if(ret < 0) {
-			if(!stop)
+			if(dnafx_is_running())
 				DNAFX_LOG(DNAFX_LOG_ERR, "Polling error: %d (%s)\n", errno, g_strerror(errno));
 			break;
 		} else if(ret > 0) {
@@ -233,6 +242,7 @@ int main(int argc, char *argv[]) {
 					if(errno != EINTR) {
 						DNAFX_LOG(DNAFX_LOG_ERR, "Error polling %d (socket #%d): %s\n",
 							fds[i].fd, i, fds[i].revents & POLLERR ? "POLLERR" : "POLLHUP");
+						dnafx_quit();
 					}
 				} else if(fds[i].fd == 0 && fds[i].revents & POLLIN) {
 					/* We have data on stdin, pass it to the CLI */
@@ -255,6 +265,8 @@ int main(int argc, char *argv[]) {
 
 done:
 	/* Cleanup */
+	dnafx_quit();
+	dnafx_httpws_deinit();
 	dnafx_tasks_deinit();
 	dnafx_presets_deinit();
 	dnafx_usb_deinit();
@@ -308,6 +320,11 @@ static char dnafx_getch(void) {
 	if(tcsetattr(0, TCSADRAIN, &old) < 0)
 		perror("tcsetattr ~ICANON");
 	return (buf);
+}
+
+/* Helper to check if the editor is still running */
+int dnafx_is_running(void) {
+	return !g_atomic_int_get(&stop);
 }
 
 /* Quit */

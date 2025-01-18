@@ -285,7 +285,7 @@ dnafx_preset *dnafx_preset_from_phb(const char *phb) {
 	return preset;
 }
 
-/* Encode a preset to a byte array */
+/* Encode a preset to a byte array/base64 */
 int dnafx_preset_to_bytes(dnafx_preset *preset, uint8_t *buf, size_t blen) {
 	if(preset == NULL || buf == NULL || blen != DNAFX_PRESET_SIZE) {
 		DNAFX_LOG(DNAFX_LOG_ERR, "Invalid arguments\n");
@@ -329,8 +329,19 @@ int dnafx_preset_to_bytes(dnafx_preset *preset, uint8_t *buf, size_t blen) {
 	return offset;
 }
 
+char *dnafx_preset_to_bytes_base64(dnafx_preset *preset) {
+	if(preset == NULL) {
+		DNAFX_LOG(DNAFX_LOG_ERR, "Invalid arguments\n");
+		return NULL;
+	}
+	uint8_t preset_bytes[DNAFX_PRESET_SIZE];
+	if(dnafx_preset_to_bytes(preset, preset_bytes, DNAFX_PRESET_SIZE) < 0)
+		return NULL;
+	return g_base64_encode(preset_bytes, DNAFX_PRESET_SIZE);
+}
+
 /* Encode a preset to a PHB/JSON string */
-char *dnafx_preset_to_phb(dnafx_preset *preset) {
+json_t *dnafx_preset_to_phb_json(dnafx_preset *preset) {
 	if(preset == NULL) {
 		DNAFX_LOG(DNAFX_LOG_ERR, "Invalid arguments\n");
 		return NULL;
@@ -355,7 +366,7 @@ char *dnafx_preset_to_phb(dnafx_preset *preset) {
 		json_t *data = json_object();
 		dnafx_effect *f = dnafx_sections[i].effects + preset->effects[i].id;
 		for(j=0; j<f->params; j++)
-			json_object_set(data, f->param_names[j], json_integer(preset->effects[i].values[j]));
+			json_object_set_new(data, f->param_names[j], json_integer(preset->effects[i].values[j]));
 		json_object_set_new(je, "Data", data);
 		json_object_set_new(em, dnafx_sections[i].name, je);
 	}
@@ -363,12 +374,22 @@ char *dnafx_preset_to_phb(dnafx_preset *preset) {
 	/* Expression pedals */
 	json_t *exp = json_object();
 	for(i=0; i<6; i++)
-		json_object_set(exp, dnafx_expression[i], json_integer(preset->expressions[i]));
+		json_object_set_new(exp, dnafx_expression[i], json_integer(preset->expressions[i]));
 	json_object_set_new(json, "Exp", exp);
+	/* Done */
+	return json;
+}
+
+char *dnafx_preset_to_phb(dnafx_preset *preset) {
+	json_t *json = dnafx_preset_to_phb_json(preset);
+	if(json == NULL)
+		return NULL;
 	/* Convert the JSON to a string */
 	char *json_text = json_dumps(json, JSON_INDENT(4) | JSON_SORT_KEYS);
+	json_decref(json);
 	DNAFX_LOG(DNAFX_LOG_VERB, "Preset '%s' exported to PHB\n", preset->name);
 	DNAFX_LOG(DNAFX_LOG_HUGE, "%s\n", json_text);
+	json_decref(json);
 	/* Done */
 	return json_text;
 }
@@ -542,4 +563,45 @@ void dnafx_presets_print(void) {
 	}
 	DNAFX_LOG(DNAFX_LOG_INFO, "\n\n");
 	g_list_free(no_id);
+}
+
+json_t *dnafx_presets_list(void) {
+	dnafx_preset *preset = NULL;
+	json_t *list = json_object();
+	json_t *device = json_object();
+	uint8_t i = 0;
+	char id_num[4];
+	for(i=1; i<= DNAFX_PRESETS_NUM; i++) {
+		preset = presets[i-1];
+		if(preset) {
+			json_t *p = json_object();
+			json_object_set(p, "id", json_integer(preset->id));
+			json_object_set(p, "name", json_string(preset->name));
+			g_snprintf(id_num, sizeof(id_num), "%d", preset->id);
+			json_object_set(device, id_num, p);
+		}
+	}
+	json_object_set_new(list, "device", device);
+	json_t *named = json_array();
+	GList *names = presets_byname ? g_hash_table_get_keys(presets_byname) : NULL;
+	GList *no_id = NULL, *temp = names;
+	while(temp != NULL) {
+		preset = g_hash_table_lookup(presets_byname, (char *)temp->data);
+		if(preset->id == 0)
+			no_id = g_list_prepend(no_id, preset);
+		temp = temp->next;
+	}
+	g_list_free(names);
+	if(no_id != NULL) {
+		i = 0;
+		GList *temp = no_id;
+		while(temp != NULL) {
+			preset = (dnafx_preset *)temp->data;
+			json_array_append_new(named, json_string(preset->name));
+			temp = temp->next;
+		}
+	}
+	g_list_free(no_id);
+	json_object_set_new(list, "others", named);
+	return list;
 }

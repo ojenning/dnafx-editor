@@ -35,6 +35,8 @@ const char *dnafx_task_type_str(dnafx_task_type type) {
 			return "change";
 		case DNAFX_TASK_RENAME_PRESET:
 			return "rename";
+		case DNAFX_TASK_RENAME_PRESET_RESPONSE:
+			return "rename resp";
 		case DNAFX_TASK_UPLOAD_PRESET_1:
 			return "upload 1";
 		case DNAFX_TASK_UPLOAD_PRESET_2:
@@ -102,13 +104,9 @@ dnafx_task *dnafx_task_new(int argc, char **argv) {
 			dnafx_task_free(task);
 			task = NULL;
 		} else {
-			task->type = DNAFX_TASK_UPLOAD_PRESET_1;
+			task->type = DNAFX_TASK_RENAME_PRESET;
 			task->number[0] = preset_number;
 			task->text[0] = g_strdup(argv[2]);
-			/* TODO */
-			DNAFX_LOG(DNAFX_LOG_WARN, "[task] Rename preset TBD.\n");
-			dnafx_task_free(task);
-			task = NULL;
 		}
 	} else if(!strcasecmp(argv[0], "upload-preset")) {
 		if(argc < 3) {
@@ -157,7 +155,7 @@ dnafx_task *dnafx_task_new(int argc, char **argv) {
 			task->text[0] = g_strdup(argv[1]);
 		}
 	} else if(!strcasecmp(argv[0], "export-preset")) {
-		if(argc < 4) {
+		if(argc < 3) {
 			DNAFX_LOG(DNAFX_LOG_WARN, "Invalid 'export-preset' format\n");
 			dnafx_task_free(task);
 			return NULL;
@@ -174,13 +172,23 @@ dnafx_task *dnafx_task_new(int argc, char **argv) {
 			task->text[0] = g_strdup(argv[1]);
 		}
 		task->text[1] = g_strdup(argv[2]);
-		task->text[2] = g_strdup(argv[3]);
+		if(argc > 3)
+			task->text[2] = g_strdup(argv[3]);
 	} else {
 		DNAFX_LOG(DNAFX_LOG_WARN, "Unsupported command '%s'\n", argv[0]);
 		dnafx_task_free(task);
 		task = NULL;
 	}
 	return task;
+}
+
+/* Add context and a callback to a task in case it's triggered by an API */
+void dnafx_task_add_context(dnafx_task *task, void *context,
+		void (* callback)(int code, void *result, void *user_data)) {
+	if(task) {
+		task->context = context;
+		task->callback = callback;
+	}
 }
 
 /* Free a task */
@@ -195,20 +203,54 @@ void dnafx_task_free(dnafx_task *task) {
 }
 
 /* Tasks management */
+typedef struct dnafx_task_help {
+	const char *command;
+	uint8_t min_args;
+	const char *options;
+	const char *summary;
+} dnafx_task_help;
+static dnafx_task_help help_items[] = {
+	{ .command = "help", .min_args = 0, .options = NULL, .summary = "Show this message" },
+	{ .command = "init", .min_args = 0, .options = NULL, .summary = "Send the initialization messages" },
+	{ .command = "get-presets", .min_args = 0, .options = NULL, .summary = "Retrieve the presets from the device" },
+	{ .command = "get-extras", .min_args = 0, .options = NULL, .summary = "Retrieve the list of extras from the device" },
+	{ .command = "change-preset", .min_args = 1, .options = "<number>", .summary = "Change the active preset on the device" },
+	{ .command = "rename-preset", .min_args = 2, .options = "<slot> \"<name>\"", .summary = "Rename an existing preset on the device" },
+	{ .command = "upload-preset", .min_args = 2, .options = "\"<name>\" <slot>", .summary = "Upload a named preset to the specified slot on the device" },
+	{ .command = "import-preset", .min_args = 2, .options = "<binary|phb> \"filename\"", .summary = "Import the specified binary or PHB preset" },
+	{ .command = "parse-preset", .min_args = 1, .options = "<number>|\"name\"", .summary = "Prints the content of the specified preset" },
+	{ .command = "export-preset", .min_args = 2, .options = "<number>|\"name\" <binary|phb> [\"filename\"]", .summary = "Export the specified preset as a binary of PHB file" },
+	{ .command = "list-presets", .min_args = 0, .options = NULL, .summary = "Prints the list of known presets" },
+	{ .command = "quit", .min_args = 0, .options = NULL, .summary = "Close the editor" },
+};
+
 void dnafx_task_show_help(void) {
-	DNAFX_LOG(DNAFX_LOG_INFO,
-		"\nSupported CLI commands:\n\n"
-		"\t" DNAFX_COLOR_BOLD "help" DNAFX_COLOR_OFF "\n\t\tShow this message\n\n"
-		"\t" DNAFX_COLOR_BOLD "init" DNAFX_COLOR_OFF "\n\t\tSend the initialization messages\n\n"
-		"\t" DNAFX_COLOR_BOLD "get-presets" DNAFX_COLOR_OFF "\n\t\tRetrieve the presets from the device\n\n"
-		"\t" DNAFX_COLOR_BOLD "get-extras" DNAFX_COLOR_OFF "\n\t\tRetrieve the list of extras from the device\n\n"
-		"\t" DNAFX_COLOR_BOLD "change-preset <number>" DNAFX_COLOR_OFF "\n\t\tChange the active preset on the device\n\n"
-		"\t" DNAFX_COLOR_BOLD "upload-preset \"<name>\" <slot>" DNAFX_COLOR_OFF "\n\t\tUpload a named preset to the specified slot on the device\n\n"
-		"\t" DNAFX_COLOR_BOLD "import-preset <binary|phb> \"filename\"" DNAFX_COLOR_OFF "\n\t\tImport the specified binary or PHB preset\n\n"
-		"\t" DNAFX_COLOR_BOLD "parse-preset <number>|\"name\"" DNAFX_COLOR_OFF "\n\t\tPrints the content of the specified preset\n\n"
-		"\t" DNAFX_COLOR_BOLD "export-preset <number>|\"name\" <binary|phb> \"filename\"" DNAFX_COLOR_OFF "\n\t\tExport the specified preset as a binary of PHB file\n\n"
-		"\t" DNAFX_COLOR_BOLD "list-presets" DNAFX_COLOR_OFF "\n\t\tPrints the list of known presets\n\n"
-		"\t" DNAFX_COLOR_BOLD "quit" DNAFX_COLOR_OFF "\n\t\tClose the editor\n\n");
+	DNAFX_LOG(DNAFX_LOG_INFO, "\nSupported CLI commands:\n\n");
+	size_t s_size = sizeof(help_items);
+	size_t num = s_size / sizeof(dnafx_task_help), i = 0;
+	for(i=0; i<num; i++) {
+		DNAFX_LOG(DNAFX_LOG_INFO, "\t" DNAFX_COLOR_BOLD "%s%s%s" DNAFX_COLOR_OFF "\n\t\t%s\n\n",
+			help_items[i].command, (help_items[i].min_args ? " " : ""),
+			(help_items[i].min_args ? help_items[i].options : ""), help_items[i].summary);
+	}
+}
+
+json_t *dnafx_task_show_help_json(void) {
+	json_t *json = json_object();
+	json_t *help = json_array();
+	size_t s_size = sizeof(help_items);
+	size_t num = s_size / sizeof(dnafx_task_help), i = 0;
+	for(i=0; i<num; i++) {
+		json_t *item = json_object();
+		json_object_set_new(item, "command", json_string(help_items[i].command));
+		json_object_set_new(item, "min-args", json_integer(help_items[i].min_args));
+		if(help_items[i].min_args > 0)
+			json_object_set_new(item, "options", json_string(help_items[i].options));
+		json_object_set_new(item, "summary", json_string(help_items[i].summary));
+		json_array_append_new(help, item);
+	}
+	json_object_set_new(json, "help", help);
+	return json;
 }
 
 void dnafx_tasks_init(void) {
