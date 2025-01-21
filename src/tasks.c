@@ -114,7 +114,7 @@ dnafx_task *dnafx_task_new(int argc, char **argv) {
 			dnafx_task_free(task);
 			return NULL;
 		}
-		int preset_number = atoi(argv[1]);
+		int preset_number = atoi(argv[2]);
 		if(preset_number < 1 || preset_number > DNAFX_PRESETS_NUM) {
 			DNAFX_LOG(DNAFX_LOG_WARN, "Invalid 'upload-preset' format\n");
 			dnafx_task_free(task);
@@ -122,7 +122,7 @@ dnafx_task *dnafx_task_new(int argc, char **argv) {
 		} else {
 			task->type = DNAFX_TASK_UPLOAD_PRESET_1;
 			task->number[0] = preset_number;
-			task->text[0] = g_strdup(argv[2]);
+			task->text[0] = g_strdup(argv[1]);
 		}
 	} else if(!strcasecmp(argv[0], "interrupt")) {
 		task->type = DNAFX_TASK_INTERRUPT;

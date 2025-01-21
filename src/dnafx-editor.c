@@ -164,7 +164,7 @@ int main(int argc, char *argv[]) {
 			} else {
 				char preset_number[4];
 				g_snprintf(preset_number, sizeof(preset_number), "%d", options.upload_preset);
-				char *command[] = { "upload-preset", preset_number, preset->name };
+				char *command[] = { "upload-preset", preset->name, preset_number };
 				dnafx_tasks_add(dnafx_task_new(3, command));
 			}
 		}

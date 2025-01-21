@@ -486,7 +486,7 @@ void dnafx_send_rename_preset(dnafx_task *task) {
 void dnafx_send_upload_preset(dnafx_task *task) {
 	if(task == NULL)
 		return;
-	if(task->type == DNAFX_TASK_GET_PRESETS_1) {
+	if(task->type == DNAFX_TASK_UPLOAD_PRESET_1) {
 		cur_preset = dnafx_preset_find_byname(task->text[0]);
 		if(cur_preset == NULL) {
 			DNAFX_LOG(DNAFX_LOG_WARN, "Can't upload preset named '%s' (no such preset)\n", task->text[0]);
