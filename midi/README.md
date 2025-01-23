@@ -29,7 +29,7 @@ The controller will create a MIDI input named `DNAfx GiT MIDI Controller`. If ev
 
 	Waiting for MIDI messages
 
-A simle way to test if everything is working is using [sendmidi] to send a MIDI message to our controller. Assuming we're using the sample configuration file, using `sendmidi` like this:
+A simle way to test if everything is working is using [sendmidi](https://github.com/gbevin/SendMIDI) to send a MIDI message to our controller. Assuming we're using the sample configuration file, using `sendmidi` like this:
 
 	sendmidi dev "DNAfx GiT MIDI Controller" cc 15 3
 
