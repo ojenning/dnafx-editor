@@ -15,7 +15,7 @@ to install the dependencies.
 
 ## Configuration
 
-You configure which MIDI CC to intercept, and which values should do what, in `src/settings.js`. The default configuration file only reacts to CC `15`, and depending on the value of the controller message may send a request to the editor (e.g., when receiving a MIDI CC `15` with value `3`, it will send a `change-preset` for slot `59`). Check the configuration file to see how you can add your own actions.
+You configure which MIDI CC to intercept, and which values should do what, in `src/settings.js`. The default configuration file only reacts to CC `15` and a couple of program changes, and depending on the value of the controller message may send a request to the editor (e.g., when receiving a MIDI CC `15` with value `3`, it will send a `change-preset` for slot `59`). Check the configuration file to see how you can add your own actions.
 
 You also need to configure where `dnafx-editor` is, that is its HTTP address. You do that in the same configuration file. The example provided in this repo assumes the editor is available locally (`127.0.0.1`) on port `8000`, which means the Node.js will send `POST` requests to `http://127.0.0.1:8000`.
 

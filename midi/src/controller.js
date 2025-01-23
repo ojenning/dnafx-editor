@@ -44,12 +44,20 @@ function sendHttpPost(data) {
 
 async function init() {
 	// Initialize MIDI events and how to react
-	midi.on('cc', function(cc) {
-		console.log('Got MIDI message:', cc);
-		let actions = settings.midi['cc' + cc.controller];
-		if(!actions)
-			return;
-		let action = actions[cc.value];
+	midi.on('message', function(msg) {
+		console.log('Got MIDI message:', msg);
+		let action = null;
+		if(msg['_type'] === 'cc') {
+			let actions = settings.midi['cc'] ? settings.midi['cc'][msg.controller] : null;
+			if(!actions)
+				return;
+			action = actions[msg.value];
+		} else if(msg['_type'] === 'program') {
+			let actions = settings.midi['program'];
+			if(!actions)
+				return;
+			action = actions[msg.number];
+		}
 		if(!action)
 			return;
 		console.log('  -- Associated action:', action);
