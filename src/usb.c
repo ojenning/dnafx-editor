@@ -91,7 +91,9 @@ int dnafx_usb_init(int debug_level) {
 		return -1;
 	/* Initialize libusb */
 	int ret = 0;
-	int init = libusb_init_context(&ctx, NULL, 0);
+	/* ORIG int init = libusb_init_context(&ctx, NULL, 0); */
+	/* See https://github.com/lminiero/dnafx-editor/issues/5 */
+	int init = libusb_init(&ctx);	
 	if(init < 0) {
 		DNAFX_LOG(DNAFX_LOG_FATAL, "Error initializing libusb: %d (%s)\n", init, libusb_strerror(init));
 		return -1;
